@@ -1,0 +1,275 @@
+/* Gemini Chat Exporter - Injected On-Page UI */
+
+#gce-root {
+  --gce-bg: rgba(255, 255, 255, 0.92);
+  --gce-bg-solid: #ffffff;
+  --gce-bg-hover: rgba(0, 0, 0, 0.04);
+  --gce-text: #1a1a1a;
+  --gce-text-dim: #666;
+  --gce-border: rgba(0, 0, 0, 0.08);
+  --gce-shadow: 0 8px 32px rgba(0, 0, 0, 0.12), 0 2px 8px rgba(0, 0, 0, 0.08);
+  --gce-shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.1);
+  --gce-accent: #4285f4;
+  --gce-pdf: #ea4335;
+  --gce-md: #8b5cf6;
+  --gce-csv: #34a853;
+  --gce-radius: 16px;
+  --gce-radius-sm: 10px;
+
+  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  position: fixed;
+  bottom: 88px;
+  right: 24px;
+  z-index: 99999;
+}
+
+@media (prefers-color-scheme: dark) {
+  #gce-root {
+    --gce-bg: rgba(32, 33, 36, 0.94);
+    --gce-bg-solid: #202124;
+    --gce-bg-hover: rgba(255, 255, 255, 0.08);
+    --gce-text: #e8eaed;
+    --gce-text-dim: #9aa0a6;
+    --gce-border: rgba(255, 255, 255, 0.1);
+    --gce-shadow: 0 8px 32px rgba(0, 0, 0, 0.4), 0 2px 8px rgba(0, 0, 0, 0.3);
+    --gce-shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.3);
+  }
+}
+
+/* ---- FAB (Floating Action Button) ---- */
+
+#gce-fab {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  border: 1px solid var(--gce-border);
+  background: var(--gce-bg);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: var(--gce-shadow-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  padding: 0;
+  outline: none;
+}
+
+#gce-fab:hover {
+  transform: scale(1.08);
+  box-shadow: var(--gce-shadow);
+  border-color: var(--gce-accent);
+}
+
+#gce-fab:active {
+  transform: scale(0.95);
+}
+
+#gce-fab svg {
+  width: 22px;
+  height: 22px;
+  color: var(--gce-accent);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#gce-fab.open svg {
+  transform: rotate(45deg);
+}
+
+/* ---- Flyout Menu ---- */
+
+#gce-menu {
+  position: absolute;
+  bottom: 58px;
+  right: 0;
+  width: 240px;
+  background: var(--gce-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--gce-border);
+  border-radius: var(--gce-radius);
+  box-shadow: var(--gce-shadow);
+  padding: 8px;
+  opacity: 0;
+  transform: translateY(8px) scale(0.96);
+  transform-origin: bottom right;
+  pointer-events: none;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+#gce-menu.open {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+#gce-menu-header {
+  padding: 8px 10px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--gce-text-dim);
+}
+
+.gce-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: var(--gce-radius-sm);
+  background: transparent;
+  color: var(--gce-text);
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: left;
+  outline: none;
+}
+
+.gce-menu-item:hover {
+  background: var(--gce-bg-hover);
+}
+
+.gce-menu-item:active {
+  transform: scale(0.98);
+}
+
+.gce-menu-item .gce-item-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.gce-menu-item .gce-item-icon svg {
+  width: 16px;
+  height: 16px;
+}
+
+.gce-menu-item.gce-pdf .gce-item-icon {
+  background: rgba(234, 67, 53, 0.1);
+  color: var(--gce-pdf);
+}
+
+.gce-menu-item.gce-md .gce-item-icon {
+  background: rgba(139, 92, 246, 0.1);
+  color: var(--gce-md);
+}
+
+.gce-menu-item.gce-csv .gce-item-icon {
+  background: rgba(52, 168, 83, 0.1);
+  color: var(--gce-csv);
+}
+
+.gce-item-label {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.gce-item-title {
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+}
+
+.gce-item-desc {
+  font-size: 11px;
+  color: var(--gce-text-dim);
+  font-weight: 400;
+}
+
+/* ---- Progress Overlay ---- */
+
+#gce-progress {
+  position: absolute;
+  bottom: 58px;
+  right: 0;
+  width: 260px;
+  background: var(--gce-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--gce-border);
+  border-radius: var(--gce-radius);
+  box-shadow: var(--gce-shadow);
+  padding: 20px;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+}
+
+#gce-progress.visible {
+  display: flex;
+}
+
+#gce-progress-spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid var(--gce-border);
+  border-top-color: var(--gce-accent);
+  border-radius: 50%;
+  animation: gce-spin 0.7s linear infinite;
+}
+
+@keyframes gce-spin {
+  to { transform: rotate(360deg); }
+}
+
+#gce-progress-text {
+  font-size: 13px;
+  color: var(--gce-text);
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+#gce-progress-sub {
+  font-size: 11px;
+  color: var(--gce-text-dim);
+}
+
+/* ---- Toast ---- */
+
+#gce-toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  padding: 10px 20px;
+  border-radius: 10px;
+  font-family: 'Google Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  color: #fff;
+  opacity: 0;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  z-index: 100000;
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+#gce-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+#gce-toast.success {
+  background: var(--gce-csv);
+  box-shadow: 0 4px 16px rgba(52, 168, 83, 0.3);
+}
+
+#gce-toast.error {
+  background: var(--gce-pdf);
+  box-shadow: 0 4px 16px rgba(234, 67, 53, 0.3);
+}

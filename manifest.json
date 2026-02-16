@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Gemini Chat Exporter",
   "description": "Export your Google Gemini AI chats to PDF, Markdown, or CSV format",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "permissions": ["activeTab"],
   "action": {
     "default_popup": "popup.html",
@@ -16,7 +16,14 @@
     {
       "matches": ["https://gemini.google.com/*"],
       "js": ["content.js"],
+      "css": ["injected-ui.css"],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["lib/jspdf.umd.min.js"],
+      "matches": ["https://gemini.google.com/*"]
     }
   ],
   "background": {
