@@ -235,15 +235,18 @@ function exportCSV(data) {
 }
 
 async function exportPDF(data) {
-  // Dynamically load jsPDF if not present
+  // Load jsPDF into the content script's isolated world via fetch + eval
   if (!window.jspdf) {
-    const script = document.createElement('script');
-    script.src = chrome.runtime.getURL('lib/jspdf.umd.min.js');
-    document.head.appendChild(script);
-    await new Promise((resolve, reject) => {
-      script.onload = resolve;
-      script.onerror = () => reject(new Error('Failed to load jsPDF'));
-    });
+    const url = chrome.runtime.getURL('lib/jspdf.umd.min.js');
+    const resp = await fetch(url);
+    if (!resp.ok) throw new Error('Failed to fetch jsPDF library');
+    const code = await resp.text();
+    // Create a self-contained scope that sets window.jspdf
+    const fn = new Function(code);
+    fn();
+  }
+  if (!window.jspdf || !window.jspdf.jsPDF) {
+    throw new Error('jsPDF failed to initialize');
   }
 
   const { jsPDF } = window.jspdf;
