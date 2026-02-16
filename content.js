@@ -8,10 +8,6 @@
  * - Lazy-loaded history via infinite-scroller scroll-to-top
  */
 
-const LOG_PREFIX = '[GCE]';
-const log = (...args) => console.log(LOG_PREFIX, ...args);
-const logErr = (...args) => console.error(LOG_PREFIX, ...args);
-
 // ---------------------------------------------------------------------------
 // DOM text extraction
 // ---------------------------------------------------------------------------
@@ -119,15 +115,11 @@ function getChatTitle() {
 
 function extractCurrentMessages() {
   const scroller = document.querySelector('infinite-scroller.chat-history');
-  if (!scroller) {
-    logErr('No infinite-scroller.chat-history found');
-    return [];
-  }
+  if (!scroller) return [];
   const messages = [];
   const containers = scroller.querySelectorAll('.conversation-container');
-  log(`Found ${containers.length} conversation containers`);
 
-  containers.forEach((container, idx) => {
+  containers.forEach((container) => {
     try {
       const uq = container.querySelector('user-query');
       if (uq) {
@@ -141,12 +133,9 @@ function extractCurrentMessages() {
         const text = extractFormattedText(el);
         if (text) messages.push({ role: 'assistant', content: text });
       }
-    } catch (err) {
-      logErr(`Error extracting container ${idx}:`, err);
-    }
+    } catch (_) {}
   });
 
-  log(`Extracted ${messages.length} messages from chat`);
   return messages;
 }
 
@@ -154,67 +143,36 @@ function extractCurrentMessages() {
 // Deep Research Report extraction
 // ---------------------------------------------------------------------------
 
-/**
- * Detect and extract a Deep Research report if one exists on the page.
- * Reports live inside <deep-research-immersive-panel> > .container > response-container > message-content.
- * The report panel container is scrollable, but all content is in the DOM.
- */
 function extractDeepResearchReport() {
   try {
-    // Check if we're in immersive mode (report is present)
-    const immersivePanel = document.querySelector('immersive-panel');
     const drPanel = document.querySelector('deep-research-immersive-panel');
+    if (!drPanel) return null;
 
-    if (!drPanel) {
-      log('No deep research report found on this page');
-      return null;
-    }
-
-    log('Deep Research report detected, extracting...');
-
-    // The report content is inside .container > response-container
     const container = drPanel.querySelector('.container');
-    if (!container) {
-      logErr('Deep Research panel found but no .container inside');
-      return null;
-    }
+    if (!container) return null;
 
-    // Find the message-content element which has the actual report text
     const messageContent = container.querySelector('message-content') ||
                            container.querySelector('response-container message-content') ||
                            container.querySelector('response-container');
 
     if (!messageContent) {
-      logErr('No message-content found in Deep Research panel');
-      // Fallback: try to extract from the container directly
       const text = extractFormattedText(container);
       if (text && text.length > 100) {
-        log(`Extracted report from container fallback: ${text.length} chars`);
         return { title: getReportTitle(drPanel), content: text };
       }
       return null;
     }
 
     const text = extractFormattedText(messageContent);
-    if (!text || text.length < 50) {
-      logErr(`Report text too short (${text?.length || 0} chars), skipping`);
-      return null;
-    }
+    if (!text || text.length < 50) return null;
 
-    const title = getReportTitle(drPanel);
-    log(`Extracted Deep Research report: "${title}" (${text.length} chars)`);
-    return { title, content: text };
-  } catch (err) {
-    logErr('Error extracting Deep Research report:', err);
+    return { title: getReportTitle(drPanel), content: text };
+  } catch (_) {
     return null;
   }
 }
 
-/**
- * Try to get the report title from the toolbar or first heading.
- */
 function getReportTitle(drPanel) {
-  // Check toolbar for title
   const toolbar = drPanel.querySelector('toolbar, .toolbar');
   if (toolbar) {
     const titleEl = toolbar.querySelector('h1, h2, .title, [class*=title]');
@@ -223,13 +181,11 @@ function getReportTitle(drPanel) {
       if (t && t.length > 3 && t.length < 200) return t;
     }
   }
-  // Fallback: first heading in the report content
   const h1 = drPanel.querySelector('h1, h2');
   if (h1) {
     const t = h1.textContent.trim();
     if (t && t.length > 3 && t.length < 200) return t;
   }
-  // Fallback: first 80 chars of text content
   const text = drPanel.textContent.trim();
   if (text) {
     const firstLine = text.split('\n')[0].trim();
@@ -250,7 +206,6 @@ async function scrollToTopAndLoadAll(onProgress) {
 
   let lastCount = scroller.querySelectorAll('.conversation-container').length;
   let stable = 0;
-  log(`Starting scroll-to-top. Initial containers: ${lastCount}`);
   if (onProgress) onProgress({ phase: 'starting', collected: lastCount });
 
   for (let i = 0; i < 100; i++) {
@@ -259,7 +214,7 @@ async function scrollToTopAndLoadAll(onProgress) {
     const count = scroller.querySelectorAll('.conversation-container').length;
     if (onProgress) onProgress({ phase: 'scrolling_up', collected: count });
     if (count === lastCount) { stable++; if (stable >= 3) break; }
-    else { log(`Loaded more: ${lastCount} -> ${count} containers`); stable = 0; lastCount = count; }
+    else { stable = 0; lastCount = count; }
   }
 
   scroller.scrollTop = 0;
@@ -267,7 +222,6 @@ async function scrollToTopAndLoadAll(onProgress) {
 
   const messages = extractCurrentMessages();
   scroller.scrollTop = scroller.scrollHeight;
-  log(`Scroll complete. Total messages: ${messages.length}`);
   if (onProgress) onProgress({ phase: 'done', collected: messages.length });
   return messages;
 }
@@ -284,27 +238,15 @@ function deduplicateMessages(messages) {
 
 async function extractChatFull(onProgress) {
   try {
-    log('Starting full chat extraction...');
     const messages = await scrollToTopAndLoadAll(onProgress);
     const deduped = deduplicateMessages(messages);
-    log(`Deduplicated: ${messages.length} -> ${deduped.length} messages`);
-
-    // Extract Deep Research report if present
     const report = extractDeepResearchReport();
 
-    const data = {
-      title: getChatTitle(),
-      messages: deduped,
-    };
-
-    if (report) {
-      data.report = report;
-      log(`Including Deep Research report: "${report.title}"`);
-    }
+    const data = { title: getChatTitle(), messages: deduped };
+    if (report) data.report = report;
 
     return { success: true, data };
   } catch (err) {
-    logErr('extractChatFull failed:', err);
     return { success: false, error: err.message };
   }
 }
@@ -322,7 +264,6 @@ function downloadBlob(blob, filename) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
-  log(`Downloaded: ${filename}`);
 }
 
 function sanitizeFilename(title) {
@@ -346,7 +287,6 @@ function exportMarkdown(data) {
     lines.push('');
   });
 
-  // Append Deep Research report if present
   if (data.report) {
     lines.push('---', '', '# Deep Research Report: ' + data.report.title, '');
     lines.push(data.report.content, '');
@@ -362,7 +302,6 @@ function exportCSV(data) {
     rows.push([esc(i + 1), esc(m.role === 'user' ? 'You' : 'Gemini'), esc(m.content), esc(m.timestamp || '')].join(','));
   });
 
-  // Append report as a final row if present
   if (data.report) {
     rows.push([esc(data.messages.length + 1), esc('Deep Research Report'), esc(data.report.content), esc('')].join(','));
   }
@@ -371,10 +310,8 @@ function exportCSV(data) {
 }
 
 async function exportPDF(data) {
-  log('Starting PDF export...');
   if (!window.jspdf || !window.jspdf.jsPDF) {
-    logErr('jsPDF not available - window.jspdf:', typeof window.jspdf);
-    throw new Error('jsPDF library not loaded. Try reloading the extension and refreshing the page.');
+    throw new Error('jsPDF library not loaded. Please reload this page.');
   }
 
   const { jsPDF } = window.jspdf;
@@ -396,7 +333,6 @@ async function exportPDF(data) {
 
   doc.addPage(); pg++; let y = M;
 
-  // Render messages
   const renderText = (text, color) => {
     const segments = text.split(/```(\w*)\n?([\s\S]*?)```/g);
     for (let i = 0; i < segments.length; i++) {
@@ -432,7 +368,6 @@ async function exportPDF(data) {
     y += 6;
   });
 
-  // Render Deep Research report
   if (data.report) {
     footer(); doc.addPage(); pg++; y = M;
     doc.setFontSize(18); doc.setFont('helvetica', 'bold'); doc.setTextColor(139, 92, 246);
@@ -447,7 +382,6 @@ async function exportPDF(data) {
 
   footer();
   doc.save(sanitizeFilename(data.title) + '.pdf');
-  log('PDF export complete');
 }
 
 // ---------------------------------------------------------------------------
@@ -456,7 +390,6 @@ async function exportPDF(data) {
 
 function injectUI() {
   if (document.getElementById('gce-root')) return;
-  log('Injecting export UI');
 
   const root = document.createElement('div');
   root.id = 'gce-root';
@@ -520,7 +453,6 @@ function injectUI() {
   root.querySelectorAll('.gce-menu-item').forEach(btn => {
     btn.addEventListener('click', async () => {
       const format = btn.dataset.format;
-      log(`Export requested: ${format}`);
       menuOpen = false;
       fab.classList.remove('open');
       menu.classList.remove('open');
@@ -540,7 +472,6 @@ function injectUI() {
       });
 
       if (!result.success) {
-        logErr('Extraction failed:', result.error);
         progress.classList.remove('visible');
         showToast(result.error, 'error');
         return;
@@ -550,7 +481,6 @@ function injectUI() {
       const hasReport = !!result.data.report;
 
       if (!msgCount && !hasReport) {
-        logErr('No messages or report found');
         progress.classList.remove('visible');
         showToast('No messages found in this chat', 'error');
         return;
@@ -565,7 +495,6 @@ function injectUI() {
         const reportNote = hasReport ? ' + report' : '';
         showToast(`Exported ${msgCount} messages${reportNote} as ${format.toUpperCase()}`, 'success');
       } catch (err) {
-        logErr('Export error:', err);
         progress.classList.remove('visible');
         if (err.message && err.message.includes('Extension context invalidated')) {
           showToast('Extension was updated. Please reload this page (Cmd+R / Ctrl+R).', 'error');
@@ -591,7 +520,6 @@ function showToast(message, type) {
 // ---------------------------------------------------------------------------
 
 function init() {
-  log('Gemini Chat Exporter loaded');
   injectUI();
   const observer = new MutationObserver(() => {
     if (!document.getElementById('gce-root')) injectUI();
@@ -612,13 +540,9 @@ if (document.readyState === 'loading') {
 chrome.runtime.onMessage.addListener((request, _sender, sendResponse) => {
   if (!request) return;
   if (request.action === 'extractChat') {
-    log('Received extractChat from popup');
     extractChatFull((progress) => {
       try { chrome.runtime.sendMessage({ action: 'extractProgress', ...progress }); } catch (_) {}
-    }).then(sendResponse).catch(err => {
-      logErr('extractChat handler error:', err);
-      sendResponse({ success: false, error: err.message });
-    });
+    }).then(sendResponse).catch(err => sendResponse({ success: false, error: err.message }));
     return true;
   }
 });
