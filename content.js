@@ -567,7 +567,11 @@ function injectUI() {
       } catch (err) {
         logErr('Export error:', err);
         progress.classList.remove('visible');
-        showToast('Export failed: ' + err.message, 'error');
+        if (err.message && err.message.includes('Extension context invalidated')) {
+          showToast('Extension was updated. Please reload this page (Cmd+R / Ctrl+R).', 'error');
+        } else {
+          showToast('Export failed: ' + err.message, 'error');
+        }
       }
     });
   });
