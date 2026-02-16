@@ -371,23 +371,10 @@ function exportCSV(data) {
 }
 
 async function exportPDF(data) {
-  log('Loading jsPDF for PDF export...');
-  if (!window.jspdf) {
-    try {
-      const url = chrome.runtime.getURL('lib/jspdf.umd.min.js');
-      const resp = await fetch(url);
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-      const code = await resp.text();
-      (new Function(code))();
-      log('jsPDF loaded successfully');
-    } catch (err) {
-      logErr('Failed to load jsPDF:', err);
-      throw new Error('Failed to load PDF library: ' + err.message);
-    }
-  }
+  log('Starting PDF export...');
   if (!window.jspdf || !window.jspdf.jsPDF) {
-    logErr('jsPDF not available after loading');
-    throw new Error('jsPDF failed to initialize');
+    logErr('jsPDF not available - window.jspdf:', typeof window.jspdf);
+    throw new Error('jsPDF library not loaded. Try reloading the extension and refreshing the page.');
   }
 
   const { jsPDF } = window.jspdf;

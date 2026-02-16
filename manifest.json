@@ -15,7 +15,7 @@
   "content_scripts": [
     {
       "matches": ["https://gemini.google.com/*"],
-      "js": ["content.js"],
+      "js": ["lib/jspdf.umd.min.js", "content.js"],
       "css": ["injected-ui.css"],
       "run_at": "document_idle"
     }
